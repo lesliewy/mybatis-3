@@ -34,7 +34,9 @@ public class MetaClass {
   private ReflectorFactory reflectorFactory;
   private Reflector reflector;
 
+  // 必须通过其他方法来构造.
   private MetaClass(Class<?> type, ReflectorFactory reflectorFactory) {
+      // 用于查找reflector.
 	this.reflectorFactory = reflectorFactory;
     this.reflector = reflectorFactory.findForClass(type);
   }
@@ -133,10 +135,12 @@ public class MetaClass {
   }
 
   public boolean hasSetter(String name) {
+    // 支持数组、复合属性，例如 author.id, 要求必须有setAuthor,  Author中必须有setId
     PropertyTokenizer prop = new PropertyTokenizer(name);
     if (prop.hasNext()) {
       if (reflector.hasSetter(prop.getName())) {
         MetaClass metaProp = metaClassForProperty(prop.getName());
+        // 递归
         return metaProp.hasSetter(prop.getChildren());
       } else {
         return false;

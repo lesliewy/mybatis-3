@@ -101,12 +101,15 @@ public class Reflector {
         continue;
       }
       String name = method.getName();
+      // 这里指定了get is 开头.
       if ((name.startsWith("get") && name.length() > 3)
           || (name.startsWith("is") && name.length() > 2)) {
+        // 从方法名中获取到对应的字段名称. 可能存在名称一致，但是方法不一致情况， 例如 getTitle() isTitle()
         name = PropertyNamer.methodToProperty(name);
         addMethodConflict(conflictingGetters, name, method);
       }
     }
+    // 解决冲突的getter.
     resolveGetterConflicts(conflictingGetters);
   }
 
@@ -121,6 +124,12 @@ public class Reflector {
         }
         Class<?> winnerType = winner.getReturnType();
         Class<?> candidateType = candidate.getReturnType();
+        // 相同的返回值类型:
+        //     boolean, 取is开头方法;
+        //     非boolean, 抛出异常;
+        // 不同的返回值类型:
+        //     具有继承关系，取子类
+        //     不具有继承关系: 抛异常;
         if (candidateType.equals(winnerType)) {
           if (!boolean.class.equals(candidateType)) {
             throw new ReflectionException(

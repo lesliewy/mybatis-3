@@ -91,10 +91,13 @@ public class CacheBuilder {
 
   public Cache build() {
     setDefaultImplementations();
+    // 反射方式创建缓存.
     Cache cache = newBaseCacheInstance(implementation, id);
+    // 使用第三方缓存，可能需要额外设置属性.
     setCacheProperties(cache);
     // issue #352, do not apply decorators to custom caches
     if (PerpetualCache.class.equals(cache.getClass())) {
+      // 装饰cache. 不断的添加特性.
       for (Class<? extends Cache> decorator : decorators) {
         cache = newCacheDecoratorInstance(decorator, cache);
         setCacheProperties(cache);
@@ -145,6 +148,7 @@ public class CacheBuilder {
       for (Map.Entry<Object, Object> entry : properties.entrySet()) {
         String name = (String) entry.getKey();
         String value = (String) entry.getValue();
+        // 根据 getter 方法判断类型, 调用第三方缓存的setter 设置.
         if (metaCache.hasSetter(name)) {
           Class<?> type = metaCache.getSetterType(name);
           if (String.class == type) {

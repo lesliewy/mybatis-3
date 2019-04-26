@@ -27,6 +27,7 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
   private String children;
 
   public PropertyTokenizer(String fullname) {
+    // 支持复合属性.
     int delim = fullname.indexOf('.');
     if (delim > -1) {
       name = fullname.substring(0, delim);
@@ -36,6 +37,7 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
       children = null;
     }
     indexedName = name;
+    // 支持数组
     delim = name.indexOf('[');
     if (delim > -1) {
       index = name.substring(delim + 1, name.length() - 1);
@@ -64,6 +66,7 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
     return children != null;
   }
 
+  // 取下一个.
   @Override
   public PropertyTokenizer next() {
     return new PropertyTokenizer(children);

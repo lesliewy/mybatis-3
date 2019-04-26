@@ -40,6 +40,7 @@ public class TypeAliasRegistry {
   private final Map<String, Class<?>> TYPE_ALIASES = new HashMap<String, Class<?>>();
 
   public TypeAliasRegistry() {
+    // 数据类型的预设别名.
     registerAlias("string", String.class);
 
     registerAlias("byte", Byte.class);
@@ -127,11 +128,13 @@ public class TypeAliasRegistry {
 
   public void registerAliases(String packageName, Class<?> superType){
     ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<Class<?>>();
+    // 查找指定包下父类为superType的类.
     resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
     Set<Class<? extends Class<?>>> typeSet = resolverUtil.getClasses();
     for(Class<?> type : typeSet){
       // Ignore inner classes and interfaces (including package-info.java)
       // Skip also inner classes. See issue #6
+      // 忽略掉匿名类、接口、内部类
       if (!type.isAnonymousClass() && !type.isInterface() && !type.isMemberClass()) {
         registerAlias(type);
       }
@@ -139,6 +142,7 @@ public class TypeAliasRegistry {
   }
 
   public void registerAlias(Class<?> type) {
+    // 取全限定类名的中类名.
     String alias = type.getSimpleName();
     Alias aliasAnnotation = type.getAnnotation(Alias.class);
     if (aliasAnnotation != null) {
@@ -153,6 +157,7 @@ public class TypeAliasRegistry {
     }
     // issue #748
     String key = alias.toLowerCase(Locale.ENGLISH);
+    // alias 不能重复.
     if (TYPE_ALIASES.containsKey(key) && TYPE_ALIASES.get(key) != null && !TYPE_ALIASES.get(key).equals(value)) {
       throw new TypeException("The alias '" + alias + "' is already mapped to the value '" + TYPE_ALIASES.get(key).getName() + "'.");
     }

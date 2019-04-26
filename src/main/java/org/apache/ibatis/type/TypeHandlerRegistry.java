@@ -48,6 +48,7 @@ public final class TypeHandlerRegistry {
   private static final Map<JdbcType, TypeHandler<?>> NULL_TYPE_HANDLER_MAP = new HashMap<JdbcType, TypeHandler<?>>();
 
   public TypeHandlerRegistry() {
+    // 预设的type handlers
     register(Boolean.class, new BooleanTypeHandler());
     register(boolean.class, new BooleanTypeHandler());
     register(JdbcType.BOOLEAN, new BooleanTypeHandler());

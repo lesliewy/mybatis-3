@@ -91,6 +91,7 @@ public class XMLMapperBuilder extends BaseBuilder {
     if (!configuration.isResourceLoaded(resource)) {
       configurationElement(parser.evalNode("/mapper"));
       configuration.addLoadedResource(resource);
+      // 绑定到命名空间
       bindMapperForNamespace();
     }
 
@@ -106,11 +107,14 @@ public class XMLMapperBuilder extends BaseBuilder {
   private void configurationElement(XNode context) {
     try {
       String namespace = context.getStringAttribute("namespace");
+      // 必须指定 namespace
       if (namespace == null || namespace.equals("")) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
       builderAssistant.setCurrentNamespace(namespace);
+      // 二级缓存引用，不同的mapper 共用一个二级cache
       cacheRefElement(context.evalNode("cache-ref"));
+      // mybatis 的二级缓存.
       cacheElement(context.evalNode("cache"));
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
       resultMapElements(context.evalNodes("/mapper/resultMap"));
@@ -186,9 +190,11 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void cacheRefElement(XNode context) {
     if (context != null) {
+      // 通过 namespace 来引用.
       configuration.addCacheRef(builderAssistant.getCurrentNamespace(), context.getStringAttribute("namespace"));
       CacheRefResolver cacheRefResolver = new CacheRefResolver(builderAssistant, context.getStringAttribute("namespace"));
       try {
+        // 通过namespace 来引用已配置的cache.
         cacheRefResolver.resolveCacheRef();
       } catch (IncompleteElementException e) {
         configuration.addIncompleteCacheRef(cacheRefResolver);
@@ -200,13 +206,18 @@ public class XMLMapperBuilder extends BaseBuilder {
     if (context != null) {
       String type = context.getStringAttribute("type", "PERPETUAL");
       Class<? extends Cache> typeClass = typeAliasRegistry.resolveAlias(type);
+      // 缓存淘汰策略
       String eviction = context.getStringAttribute("eviction", "LRU");
       Class<? extends Cache> evictionClass = typeAliasRegistry.resolveAlias(eviction);
+      // 刷新间隔.
       Long flushInterval = context.getLongAttribute("flushInterval");
+      // 容量
       Integer size = context.getIntAttribute("size");
+      // 只读
       boolean readWrite = !context.getBooleanAttribute("readOnly", false);
       boolean blocking = context.getBooleanAttribute("blocking", false);
       Properties props = context.getChildrenAsProperties();
+      // 构建缓存对象.
       builderAssistant.useNewCache(typeClass, evictionClass, flushInterval, size, readWrite, blocking, props);
     }
   }
@@ -239,6 +250,7 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   private void resultMapElements(List<XNode> list) throws Exception {
+    // 同一个mapper下有多个<resultMap> 节点.
     for (XNode resultMapNode : list) {
       try {
         resultMapElement(resultMapNode);
@@ -254,6 +266,7 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private ResultMap resultMapElement(XNode resultMapNode, List<ResultMapping> additionalResultMappings) throws Exception {
     ErrorContext.instance().activity("processing " + resultMapNode.getValueBasedIdentifier());
+    // 解析各属性. <resultMap> 的属性.
     String id = resultMapNode.getStringAttribute("id",
         resultMapNode.getValueBasedIdentifier());
     String type = resultMapNode.getStringAttribute("type",
@@ -267,6 +280,7 @@ public class XMLMapperBuilder extends BaseBuilder {
     List<ResultMapping> resultMappings = new ArrayList<ResultMapping>();
     resultMappings.addAll(additionalResultMappings);
     List<XNode> resultChildren = resultMapNode.getChildren();
+    // 解析子节点.
     for (XNode resultChild : resultChildren) {
       if ("constructor".equals(resultChild.getName())) {
         processConstructorElement(resultChild, typeClass, resultMappings);
@@ -274,6 +288,7 @@ public class XMLMapperBuilder extends BaseBuilder {
         discriminator = processDiscriminatorElement(resultChild, typeClass, resultMappings);
       } else {
         List<ResultFlag> flags = new ArrayList<ResultFlag>();
+        // <resultMap> 节点下的 <id> 节点.
         if ("id".equals(resultChild.getName())) {
           flags.add(ResultFlag.ID);
         }
@@ -282,6 +297,7 @@ public class XMLMapperBuilder extends BaseBuilder {
     }
     ResultMapResolver resultMapResolver = new ResultMapResolver(builderAssistant, id, typeClass, extend, discriminator, resultMappings, autoMapping);
     try {
+      // 构建ResultMap, 并返回.
       return resultMapResolver.resolve();
     } catch (IncompleteElementException  e) {
       configuration.addIncompleteResultMap(resultMapResolver);
@@ -359,6 +375,7 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private ResultMapping buildResultMappingFromContext(XNode context, Class<?> resultType, List<ResultFlag> flags) throws Exception {
     String property;
+    // <resultMap> 的属性.
     if (flags.contains(ResultFlag.CONSTRUCTOR)) {
       property = context.getStringAttribute("name");
     } else {
@@ -368,6 +385,7 @@ public class XMLMapperBuilder extends BaseBuilder {
     String javaType = context.getStringAttribute("javaType");
     String jdbcType = context.getStringAttribute("jdbcType");
     String nestedSelect = context.getStringAttribute("select");
+    // resultMap 嵌套.
     String nestedResultMap = context.getStringAttribute("resultMap",
         processNestedResultMappings(context, Collections.<ResultMapping> emptyList()));
     String notNullColumn = context.getStringAttribute("notNullColumn");
@@ -384,6 +402,7 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
   
   private String processNestedResultMappings(XNode context, List<ResultMapping> resultMappings) throws Exception {
+    // 可能存在resultMap 嵌套的几种节点.
     if ("association".equals(context.getName())
         || "collection".equals(context.getName())
         || "case".equals(context.getName())) {

@@ -101,6 +101,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void parseConfiguration(XNode root) {
     try {
+      // 解析不同的节点.
       //issue #117 read properties first
       propertiesElement(root.evalNode("properties"));
       Properties settings = settingsAsProperties(root.evalNode("settings"));
@@ -110,11 +111,14 @@ public class XMLConfigBuilder extends BaseBuilder {
       objectFactoryElement(root.evalNode("objectFactory"));
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
+      // settings 中的信息设置到 Configuration 对象中
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
+        // environments 中配置数据源、事务管理等.
       environmentsElement(root.evalNode("environments"));
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
       typeHandlerElement(root.evalNode("typeHandlers"));
+      // 映射文件, sql部分.
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -129,6 +133,7 @@ public class XMLConfigBuilder extends BaseBuilder {
     // Check that all settings are known to the configuration class
     MetaClass metaConfig = MetaClass.forClass(Configuration.class, localReflectorFactory);
     for (Object key : props.keySet()) {
+      // <settings> 中的name属性值必须是Configuration中存在的.
       if (!metaConfig.hasSetter(String.valueOf(key))) {
         throw new BuilderException("The setting " + key + " is not known.  Make sure you spelled it correctly (case sensitive).");
       }
@@ -150,6 +155,7 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
   }
 
+  // 两种方式: <package>、 <typeAlias>
   private void typeAliasesElement(XNode parent) {
     if (parent != null) {
       for (XNode child : parent.getChildren()) {
@@ -177,6 +183,7 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void pluginElement(XNode parent) throws Exception {
     if (parent != null) {
       for (XNode child : parent.getChildren()) {
+        // 拦截器.
         String interceptor = child.getStringAttribute("interceptor");
         Properties properties = child.getChildrenAsProperties();
         Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).newInstance();
@@ -214,6 +221,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void propertiesElement(XNode context) throws Exception {
     if (context != null) {
+      // name value resource url 属性.
       Properties defaults = context.getChildrenAsProperties();
       String resource = context.getStringAttribute("resource");
       String url = context.getStringAttribute("url");
@@ -221,8 +229,10 @@ public class XMLConfigBuilder extends BaseBuilder {
         throw new BuilderException("The properties element cannot specify both a URL and a resource based property file reference.  Please specify one or the other.");
       }
       if (resource != null) {
+          // 从文件系统中加载并解析属性文件, 放入defaults中.
         defaults.putAll(Resources.getResourceAsProperties(resource));
       } else if (url != null) {
+          // 通过url获取属性文件，放入defaults中.
         defaults.putAll(Resources.getUrlAsProperties(url));
       }
       Properties vars = configuration.getVariables();
@@ -266,12 +276,14 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void environmentsElement(XNode context) throws Exception {
     if (context != null) {
+      // <environments default="dev">....</environments>   取配置的default.
       if (environment == null) {
         environment = context.getStringAttribute("default");
       }
       for (XNode child : context.getChildren()) {
         String id = child.getStringAttribute("id");
         if (isSpecifiedEnvironment(id)) {
+          // 创建transactionfactory, datasource, 并最终生成Environment
           TransactionFactory txFactory = transactionManagerElement(child.evalNode("transactionManager"));
           DataSourceFactory dsFactory = dataSourceElement(child.evalNode("dataSource"));
           DataSource dataSource = dsFactory.getDataSource();
@@ -305,6 +317,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private TransactionFactory transactionManagerElement(XNode context) throws Exception {
     if (context != null) {
+      // 指定事务管理类型, JDBC, MANAGED.
       String type = context.getStringAttribute("type");
       Properties props = context.getChildrenAsProperties();
       TransactionFactory factory = (TransactionFactory) resolveClass(type).newInstance();
@@ -316,6 +329,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private DataSourceFactory dataSourceElement(XNode context) throws Exception {
     if (context != null) {
+      // 数据源类型. JNDI POOLED UNPOOLED
       String type = context.getStringAttribute("type");
       Properties props = context.getChildrenAsProperties();
       DataSourceFactory factory = (DataSourceFactory) resolveClass(type).newInstance();
@@ -332,6 +346,8 @@ public class XMLConfigBuilder extends BaseBuilder {
           String typeHandlerPackage = child.getStringAttribute("name");
           typeHandlerRegistry.register(typeHandlerPackage);
         } else {
+          // 如果配置了javatype, 则是javaType, jdbcType, 两个维度:  <javaType, <jdbcType, handler>>
+          // 没有配置: 则是<handlerclass, handler>
           String javaTypeName = child.getStringAttribute("javaType");
           String jdbcTypeName = child.getStringAttribute("jdbcType");
           String handlerTypeName = child.getStringAttribute("handler");
@@ -362,6 +378,7 @@ public class XMLConfigBuilder extends BaseBuilder {
           String resource = child.getStringAttribute("resource");
           String url = child.getStringAttribute("url");
           String mapperClass = child.getStringAttribute("class");
+          // 从指定本地路径加载mapper配置.
           if (resource != null && url == null && mapperClass == null) {
             ErrorContext.instance().resource(resource);
             InputStream inputStream = Resources.getResourceAsStream(resource);
