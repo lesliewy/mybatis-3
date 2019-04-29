@@ -85,10 +85,14 @@ public class ResultMap {
       if (resultMap.id == null) {
         throw new IllegalArgumentException("ResultMaps must have an id");
       }
+      // column 集合.
       resultMap.mappedColumns = new HashSet<String>();
+      // properties 集合.
       resultMap.mappedProperties = new HashSet<String>();
+      // id节点 集合.
       resultMap.idResultMappings = new ArrayList<ResultMapping>();
       resultMap.constructorResultMappings = new ArrayList<ResultMapping>();
+      // result 节点集合.
       resultMap.propertyResultMappings = new ArrayList<ResultMapping>();
       final List<String> constructorArgNames = new ArrayList<String>();
       for (ResultMapping resultMapping : resultMap.resultMappings) {

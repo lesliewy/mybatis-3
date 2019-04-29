@@ -48,6 +48,7 @@ public class XMLScriptBuilder extends BaseBuilder {
     this.parameterType = parameterType;
   }
 
+  // 解析sql.
   public SqlSource parseScriptNode() {
     List<SqlNode> contents = parseDynamicTags(context);
     MixedSqlNode rootSqlNode = new MixedSqlNode(contents);
@@ -75,6 +76,7 @@ public class XMLScriptBuilder extends BaseBuilder {
           contents.add(new StaticTextSqlNode(data));
         }
       } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
+        // 使用对应的节点的handler来处理.
         String nodeName = child.getNode().getNodeName();
         NodeHandler handler = nodeHandlers(nodeName);
         if (handler == null) {
@@ -87,6 +89,7 @@ public class XMLScriptBuilder extends BaseBuilder {
     return contents;
   }
 
+  // 处理不同的节点.
   NodeHandler nodeHandlers(String nodeName) {
     Map<String, NodeHandler> map = new HashMap<String, NodeHandler>();
     map.put("trim", new TrimHandler());

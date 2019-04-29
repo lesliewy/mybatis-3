@@ -68,12 +68,12 @@ public class MapperMethod {
         break;
       }
       case SELECT:
-        if (method.returnsVoid() && method.hasResultHandler()) {
+        if (method.returnsVoid() && method.hasResultHandler()) {  // 有 resultHandler
           executeWithResultHandler(sqlSession, args);
           result = null;
         } else if (method.returnsMany()) {
           result = executeForMany(sqlSession, args);
-        } else if (method.returnsMap()) {
+        } else if (method.returnsMap()) { //
           result = executeForMap(sqlSession, args);
         } else if (method.returnsCursor()) {
           result = executeForCursor(sqlSession, args);

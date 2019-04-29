@@ -91,10 +91,11 @@ public class XMLMapperBuilder extends BaseBuilder {
     if (!configuration.isResourceLoaded(resource)) {
       configurationElement(parser.evalNode("/mapper"));
       configuration.addLoadedResource(resource);
-      // 绑定到命名空间
+      // 绑定到命名空间, MapperRegistry
       bindMapperForNamespace();
     }
 
+    // 处理由于配置文件顺序问题，导致某些节点可能解析不到.
     parsePendingResultMaps();
     parsePendingCacheRefs();
     parsePendingStatements();
@@ -118,7 +119,9 @@ public class XMLMapperBuilder extends BaseBuilder {
       cacheElement(context.evalNode("cache"));
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+      // sql 片段.
       sqlElement(context.evalNodes("/mapper/sql"));
+      // sql语句.
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. Cause: " + e, e);
@@ -168,6 +171,7 @@ public class XMLMapperBuilder extends BaseBuilder {
           iter.remove();
         } catch (IncompleteElementException e) {
           // Cache ref is still missing a resource...
+          // 这个异常仍然不做处理，可能引用的cache 在后面的配置文件中.
         }
       }
     }
@@ -344,8 +348,10 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void sqlElement(List<XNode> list, String requiredDatabaseId) throws Exception {
     for (XNode context : list) {
+      // 用于区分不同的数据库, 不同数据库sql语法可能不同;  如果指定了databaseId, 该sql片段只能被相同的databaseId的sql语句引用.
       String databaseId = context.getStringAttribute("databaseId");
       String id = context.getStringAttribute("id");
+      // 拼接namespace.
       id = builderAssistant.applyCurrentNamespace(id, false);
       if (databaseIdMatchesCurrent(id, databaseId, requiredDatabaseId)) {
         sqlFragments.put(id, context);
@@ -376,6 +382,7 @@ public class XMLMapperBuilder extends BaseBuilder {
   private ResultMapping buildResultMappingFromContext(XNode context, Class<?> resultType, List<ResultFlag> flags) throws Exception {
     String property;
     // <resultMap> 的属性.
+    // 通过构造函数生成 pojo, 而不是setter().
     if (flags.contains(ResultFlag.CONSTRUCTOR)) {
       property = context.getStringAttribute("name");
     } else {

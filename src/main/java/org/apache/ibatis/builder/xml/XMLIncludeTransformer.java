@@ -81,6 +81,7 @@ public class XMLIncludeTransformer {
   }
 
   private Node findSqlFragment(String refid, Properties variables) {
+    // 先执行变量替换.  ${}
     refid = PropertyParser.parse(refid, variables);
     refid = builderAssistant.applyCurrentNamespace(refid, true);
     try {

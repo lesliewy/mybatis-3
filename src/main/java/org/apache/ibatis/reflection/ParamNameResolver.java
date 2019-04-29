@@ -62,6 +62,7 @@ public class ParamNameResolver {
         continue;
       }
       String name = null;
+      // 处理 @Param 注解.
       for (Annotation annotation : paramAnnotations[paramIndex]) {
         if (annotation instanceof Param) {
           hasParamAnnotation = true;
