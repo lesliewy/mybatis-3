@@ -55,6 +55,7 @@ public abstract class BaseExecutor implements Executor {
   protected Executor wrapper;
 
   protected ConcurrentLinkedQueue<DeferredLoad> deferredLoads;
+  // 一级缓存, sqlsession 级别.
   protected PerpetualCache localCache;
   protected PerpetualCache localOutputParameterCache;
   protected Configuration configuration;
@@ -96,6 +97,7 @@ public abstract class BaseExecutor implements Executor {
     } finally {
       transaction = null;
       deferredLoads = null;
+      // 显然, sqlsession close() 后无法再使用localcache. 与clearLocalCache()不同.
       localCache = null;
       localOutputParameterCache = null;
       closed = true;
@@ -191,16 +193,17 @@ public abstract class BaseExecutor implements Executor {
     }
   }
 
+  // 一级缓存 key创建.
   @Override
   public CacheKey createCacheKey(MappedStatement ms, Object parameterObject, RowBounds rowBounds, BoundSql boundSql) {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
     CacheKey cacheKey = new CacheKey();
-    cacheKey.update(ms.getId());
-    cacheKey.update(rowBounds.getOffset());
-    cacheKey.update(rowBounds.getLimit());
-    cacheKey.update(boundSql.getSql());
+    cacheKey.update(ms.getId());                // com.wuhulala.springboot.mybatis.mapper.CountryMapper.selectAll
+    cacheKey.update(rowBounds.getOffset());     // 0
+    cacheKey.update(rowBounds.getLimit());      // 2147483647
+    cacheKey.update(boundSql.getSql());         // select id,countryname,countrycode from country
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
     TypeHandlerRegistry typeHandlerRegistry = ms.getConfiguration().getTypeHandlerRegistry();
     // mimic DefaultParameterHandler logic
@@ -218,7 +221,7 @@ public abstract class BaseExecutor implements Executor {
           MetaObject metaObject = configuration.newMetaObject(parameterObject);
           value = metaObject.getValue(propertyName);
         }
-        cacheKey.update(value);
+        cacheKey.update(value);            // 这个sql的所有参数
       }
     }
     if (configuration.getEnvironment() != null) {
